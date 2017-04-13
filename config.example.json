@@ -1,0 +1,13 @@
+{
+  "host" : "",
+  "user" : "",
+  "password" : "",
+  "database" : "",
+  "ripple_irc" : "",
+  "ripple_user" : "",
+  "ripple_password" : "",
+  "twitch_irc" : "",
+  "twitch_user" : "",
+  "twitch_password" : "",
+  "twich_token" : ""
+}
