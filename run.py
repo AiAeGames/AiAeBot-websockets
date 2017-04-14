@@ -147,6 +147,7 @@ def on_message(ws, message):
         beatmap_info = ripple.md5(ajson["data"]["beatmap_md5"])
         formatter = {
             "id": ajson["data"]["id"],
+            "beatmapid": beatmap_info[0]["beatmap_id"],
             "song": beatmap_info[0]["artist"] + " - " + beatmap_info[0]["title"] + " [" + beatmap_info[0]["version"] + "]",
             "stars": float(beatmap_info[0]["difficultyrating"]),
             "score": ajson["data"]["score"],
@@ -162,8 +163,6 @@ def on_message(ws, message):
         user = ripple.user(id=id)
         quarry = mysql.execute(connection, cursor, "SELECT twitch_username, std_pp, std_rank FROM ripple WHERE user_id=%s", [id])
         result = quarry.fetchone()
-        #print(user["username"])
-        #print(ajson)
         r = ripple.user(id=id)
         if mode == 0:
             if r["std"]["pp"] != result["std_pp"]:
@@ -171,10 +170,19 @@ def on_message(ws, message):
                 pp = r["std"]["pp"]
                 msg = "Rank %+d (%+d pp)" % ((result["std_rank"] - rank), (pp - result["std_pp"]))
                 mysql.execute(connection, cursor, "UPDATE ripple SET std_pp=%s, std_rank=%s WHERE user_id=%s", [pp, rank, r["id"]])
-                #print(msg)
                 bot.connection.privmsg(user["username"].replace(" ", "_"), msg)
-        bot.connection.privmsg(user["username"].replace(" ", "_"), "{song} {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}*".format(**formatter))
-        tbot.connection.privmsg("#" + result["twitch_username"], "{song} {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}*".format(**formatter))
+            bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
+        elif mode == 1:
+            bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {score:,d} score | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
+        elif mode == 2:
+            bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {score:,d} score | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
+        elif mode == 3:
+            bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
+        if result["twitch_username"] != "":
+            if mode == 0 or mode == 3:
+                tbot.connection.privmsg("#" + result["twitch_username"], "{song} {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
+            else:
+                tbot.connection.privmsg("#" + result["twitch_username"], "{song} {mods} | {accuracy:.2f}% | {score:,d} score | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
 
 def on_error(ws, error):
     exit()
