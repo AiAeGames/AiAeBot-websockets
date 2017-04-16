@@ -7,7 +7,7 @@ import json, time, re, random, websocket, ripple, ConvertMods, mysql, oaas, logg
 from cooldown import cooldown
 from threading import Thread
 
-logging.disable(logging.CRITICAL)
+logging.disable(logging.ERROR)
 
 with open("config.json", "r") as f:
     config = json.load(f)
@@ -51,6 +51,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, c, e):
         self.do_command(e)
+        print(e)
 
     @cooldown(20)
     def beatmap_request(self, groups, e):
@@ -97,7 +98,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 "beatmapsetid": beatmapsetid,
                 "artist": gimme_that_pp["artist"],
                 "title": gimme_that_pp["title"],
-                "bpm": gimme_that_pp["bpm"],
+                "bpm": int(gimme_that_pp["bpm"]),
                 "version": gimme_that_pp["diff"],
                 "stars": gimme_that_pp["stars"],
                 "all_mods": ''.join(mods)
@@ -129,8 +130,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         message = e.arguments[0]
         regexes = [
             ('https?:\/\/osu\.ppy\.sh\/([bs])\/([0-9]+)(.*)', self.beatmap_request),
-            ('np', self.commands),
-            ('!np', self.commands)
+            ('!np|np', self.commands),
         ]
 
         for regex in regexes:
@@ -171,6 +171,8 @@ def on_message(ws, message):
                 msg = "Rank %+d (%+d pp)" % ((result["std_rank"] - rank), (pp - result["std_pp"]))
                 mysql.execute(connection, cursor, "UPDATE ripple SET std_pp=%s, std_rank=%s WHERE user_id=%s", [pp, rank, r["id"]])
                 bot.connection.privmsg(user["username"].replace(" ", "_"), msg)
+                if result["twitch_username"] != "":
+                    tbot.connection.privmsg("#" + result["twitch_username"], msg)
             bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {pp:.2f}pp | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
         elif mode == 1:
             bot.connection.privmsg(user["username"].replace(" ", "_"), "[https://osu.ppy.sh/b/{beatmapid} {song}] {mods} | {accuracy:.2f}% | {score:,d} score | {combo}/{max_combo} | {stars:.2f}★".format(**formatter))
