@@ -18,3 +18,6 @@ def execute(connection, cursor, sql, args=None):
         print ("Something went wrong with mysql connection.... trying to reconnect.")
         connection.connect()
         return execute(sql, args)
+
+
+
